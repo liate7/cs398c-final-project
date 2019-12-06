@@ -3,6 +3,8 @@ import nltk
 import pandas
 import pickle
 import os
+import functools
+from nltk.corpus import sentiwordnet
 #- UI
 #   - Like previous assignments
 #   - Ask if indexing (LSA (3 versions???), doc2vec, maybe repr for recommender part)
@@ -46,6 +48,7 @@ def get_index():
 ## Call all your indexing functions in here.
 def index():
     """ Function to do all the indexing, returns the index after writing it """
+    recommender_index()
 
 def dispatch():
     PROMPT = "[Search] by title, search by title in [genre], [recommend] a movie, or [quit]? "
@@ -70,6 +73,51 @@ def dispatch():
         print('Respond with a prefix of one of search, genre, recommend, or quit')
         return False
 
+def recommender_index(moviesDF):
+    """
+    Generate the index for the recommender
+    Takes in a pandas thing of moviesDF.csv
+    """
+    # Get the scores
+    ratings = ratings_matrix(moviesDF)
+    score_matrix = get_scores(moviesDF)
+    matrix = []
+    #for reviewer in m['reviewerID'].unique():
+
+def ratings_matrix(moviesDF):
+    """
+    Takes in a pandas thing with reviewerID, movieID, and reviewText parts
+    Returns a [max(reviewerIDs), max(movieID)] array of reviewTexts
+    """
+    ret = [[""] * moviesDF['movieID'].max()] * moviesDF['reviewerID'].max()
+    for _, row in moviesDF.iterrows():
+        ret[row['reviewerID'] - 1][row['movieID'] - 1] = row['reviewText']
+    return ret
+
+def process_text(text):
+    sents = map(nltk.word_tokenize, nltk.sent_tokenize(text))
+    tagged = nltk.pos_tag_sents(sents)
+    tagged = map(lambda x: remove_if(x,
+        lambda y: y in nltk.corpus.stopwords.words()),
+        tagged)
+
+
+def upenn_to_wn_tag(tag):
+    transl = { 'JJ' : 'a', 'RB' : 'r', 'NN' : 'n', 'VB' : 'v' }
+    if len(tag) >= 2:
+        return transl.get(tag[:2], None)
+
+def tag_tuple(tupl):
+    def weight(synset):
+        return synset.pos_score() - syn.neg_score()
+    word, tag = tupl
+    return functools.reduce(operator.add,
+            map(weight, sentiwordnet.senti_synsets(word, upenn_to_wn_tag(tag))))
+
+def remove_if(it, pred):
+    for x in it:
+        if not pred(x):
+            yield x
 
 def ask(prompt):
     res = input(prompt)
