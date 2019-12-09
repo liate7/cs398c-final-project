@@ -5,6 +5,8 @@ import pickle
 import os
 import functools
 from nltk.corpus import sentiwordnet
+import collections
+import numpy
 #- UI
 #   - Like previous assignments
 #   - Ask if indexing (LSA (3 versions???), doc2vec, maybe repr for recommender part)
@@ -80,8 +82,6 @@ def recommender_index(moviesDF):
     """
     # Get the scores
     ratings = ratings_matrix(moviesDF)
-    score_matrix = get_scores(moviesDF)
-    matrix = []
     #for reviewer in m['reviewerID'].unique():
 
 def ratings_matrix(moviesDF):
@@ -90,34 +90,59 @@ def ratings_matrix(moviesDF):
     Returns a [max(reviewerIDs), max(movieID)] array of reviewTexts
     """
     ret = [[""] * moviesDF['movieID'].max()] * moviesDF['reviewerID'].max()
-    for _, row in moviesDF.iterrows():
-        ret[row['reviewerID'] - 1][row['movieID'] - 1] = row['reviewText']
+    def closure(row):
+        """
+        Is a named function because python doesn't allow assignment in lambdas
+        """
+        if isinstance(row['reviewText'], str):
+            ret[row['reviewerID'] - 1][row['movieID'] - 1] = process_text(row['reviewText'])
+        else:
+            ret[row['reviewerID'] - 1][row['movieID'] - 1] = []
+    moviesDF.apply(closure, axis=1)
     return ret
+
 
 def process_text(text):
     sents = map(nltk.word_tokenize, nltk.sent_tokenize(text))
     tagged = nltk.pos_tag_sents(sents)
-    tagged = map(lambda x: remove_if(x,
-        lambda y: y in nltk.corpus.stopwords.words()),
-        tagged)
+    ret = [ [tag_tuple(x) for x in sent if x[0] not in nltk.corpus.stopwords.words('english') ]
+            for sent in tagged]
+    return list(flatten(ret))
 
+def flatten(it):
+    for x in it:
+        if isinstance(x, str):
+            yield x
+        elif isinstance(x, collections.Iterable):
+            for y in x:
+                yield y
+        else:
+            yield y
 
 def upenn_to_wn_tag(tag):
     transl = { 'JJ' : 'a', 'RB' : 'r', 'NN' : 'n', 'VB' : 'v' }
     if len(tag) >= 2:
         return transl.get(tag[:2], None)
+    elif len(tag) == 1:
+        tag
 
 def tag_tuple(tupl):
     def weight(synset):
-        return synset.pos_score() - syn.neg_score()
+        return synset.pos_score() - synset.neg_score()
     word, tag = tupl
-    return functools.reduce(operator.add,
-            map(weight, sentiwordnet.senti_synsets(word, upenn_to_wn_tag(tag))))
+    synsets = sentiwordnet.senti_synsets(word, upenn_to_wn_tag(tag))
+    return avg([weight(s) for s in synsets])
 
-def remove_if(it, pred):
+def avg(it):
+    i = 0
+    acc = 0
     for x in it:
-        if not pred(x):
-            yield x
+        acc += x
+        i += 1
+    if i == 0:
+        return 0
+    else:
+        return acc / i
 
 def ask(prompt):
     res = input(prompt)
