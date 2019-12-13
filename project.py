@@ -49,7 +49,7 @@ def get_index():
 ## Call all your indexing functions in here.
 def index():
     """ Function to do all the indexing, returns the index after writing it """
-    recommender.index()
+    recommender.index(<moviesDF pandas>)
 
 def dispatch():
     PROMPT = "[Search] by title, search by title in [genre], [recommend] a movie, or [quit]? "

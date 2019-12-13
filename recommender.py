@@ -2,6 +2,8 @@ from nltk.corpus import sentiwordnet
 import numpy as np
 import pandas
 import nltk
+# This file is all Andrew's code (except for the one bit of matrix math to do
+# the cosine distances of all the vectors at once, which has attribution
 
 def index(moviesDF):
     """
@@ -64,8 +66,11 @@ def make_matrix(lemmas, docs):
     doclen = len(docs)
     lemmalen = len(lemmas)
     for doc in range(doclen):
+        counts = dict()
+        for lemma in docs[doc]:
+            counts[lemma] = counts.get(lemma, 0) + 1
         for lemma in range(lemmalen):
-            matrix[doc][lemma] = docs[doc].count(lemmas[lemma])
+            matrix[doc][lemma] = counts.get(lemmas[lemma], 0)
     return matrix
 
 def doclist_to_matrix(moviesDF, doc_sent):
@@ -77,7 +82,10 @@ def doclist_to_matrix(moviesDF, doc_sent):
     ret = np.full((moviesDF['reviewerID'].max(), moviesDF['movieID'].max()), np.nan)
     for i in range(len(doc_sent)):
         ret[moviesDF['reviewerID'][i] - 1][moviesDF['movieID'][i] - 1] = doc_sent[i]
-    return np.array(ret)
+    return np.apply_along_axis(variance, 1, np.ret)
+
+def variance(arr):
+    return arr - np.average(np.nan_to_num(arr))
 
 def upenn_to_wn_tag(tag):
     transl = { 'JJ' : 'a', 'RB' : 'r', 'NN' : 'n', 'VB' : 'v' }
@@ -103,16 +111,6 @@ def avg(it):
         return 0
     else:
         return acc / i
-
-def cos_sim(u, v):
-    '''
-    Takes 2 vectors u, v and returns the cosine similarity according 
-    to the definition of the dot product
-    '''
-    dot_product = np.dot(u, v)
-    norm_u = np.linalg.norm(u) # magnitude of u
-    norm_v = np.linalg.norm(v) # magnitude of v
-    return dot_product / (norm_u * norm_v)
 
 def cosine_sim_table(matrix):
     '''
