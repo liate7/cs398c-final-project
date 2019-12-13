@@ -11,5 +11,5 @@ def index(docs, size_frac):
 def query(query, index):
     vectorizer, svder, matrix = index
     query = vectorizer.fit_transform(query)
-
+    
 

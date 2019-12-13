@@ -1,5 +1,6 @@
 import numpy as np
 from nltk import corpus
+from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 from gensim.models import Word2Vec

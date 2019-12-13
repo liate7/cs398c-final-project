@@ -8,6 +8,7 @@ import numpy
 
 import recommender
 import doc2vec
+import lsa
 #- UI
 #   - Like previous assignments
 #   - Ask if indexing (LSA (3 versions???), doc2vec, maybe repr for recommender part)
@@ -55,8 +56,12 @@ def index():
     movies = pandas.read_csv('movies.csv')
     moviesDF = pandas.read_csv('moviesDF.csv')
     index['movies'] = movies
-    index['doc2vec'] = doc2vec.index(movies['titles'])
-    index['recommender'] = recommender.index(moviesDF)
+    print('Making doc2vec index')
+    index['doc2vec'] = doc2vec.index(movies['title'][:100])
+    print('Making recommender index')
+    index['recommender'] = recommender.index(moviesDF[:100])
+    print('Making LSA index')
+    index['lsa'] = lsa.index(movies['title'][:100], 0.3)
     pickle.dump(index, open(INDEX, 'wb'))
     return index
 

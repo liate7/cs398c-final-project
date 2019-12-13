@@ -85,7 +85,7 @@ def doclist_to_matrix(moviesDF, doc_sent):
     ret = np.full((moviesDF['reviewerID'].max(), moviesDF['movieID'].max()), np.nan)
     for i in range(len(doc_sent)):
         ret[moviesDF['reviewerID'][i] - 1][moviesDF['movieID'][i] - 1] = doc_sent[i]
-    return np.apply_along_axis(variance, 1, np.ret)
+    return np.apply_along_axis(variance, 1, ret)
 
 def variance(arr):
     return arr - np.average(np.nan_to_num(arr))
