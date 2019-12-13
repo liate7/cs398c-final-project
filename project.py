@@ -4,8 +4,10 @@ import pandas
 import pickle
 import os
 import collections
+import numpy
 
 import recommender
+import doc2vec
 #- UI
 #   - Like previous assignments
 #   - Ask if indexing (LSA (3 versions???), doc2vec, maybe repr for recommender part)
@@ -31,7 +33,7 @@ def main():
     index = get_index()
     quit = False
     while not quit:
-        quit = dispatch()
+        quit = dispatch(index)
 
 def should_index():
     """ Asks the user if the index should be generated, with confirmation for unusual cases """
@@ -49,9 +51,19 @@ def get_index():
 ## Call all your indexing functions in here.
 def index():
     """ Function to do all the indexing, returns the index after writing it """
-    recommender.index(<moviesDF pandas>)
+    index = {}
+    movies = pandas.read_csv('movies.csv')
+    moviesDF = pandas.read_csv('moviesDF.csv')
+    index['movies'] = movies
+    index['doc2vec'] = doc2vec.index(movies['titles'])
+    index['recommender'] = recommender.index(moviesDF)
+    pickle.dump(index, open(INDEX, 'wb'))
+    return index
 
-def dispatch():
+def read_index():
+    return pickle.load(open(INDEX, 'rb'))
+
+def dispatch(index):
     PROMPT = "[Search] by title, search by title in [genre], [recommend] a movie, or [quit]? "
     inp = input(PROMPT)
     inp = inp.strip().lower()
@@ -59,13 +71,13 @@ def dispatch():
         print('Respond with a prefix of one of search, genre, recommend, or quit')
         return False
     if 'search'.startswith(inp):
-        ## Search in all the movie titles
+        search(index)
         return False
     elif 'genre'.startswith(inp):
         ## Do a genre search
         return False
     elif 'recommend'.startswith(inp):
-        ## Get the user number and get their recommendations
+        recommend(index)
         return False
     elif 'quit'.startswith(inp):
         # Tell the outer loop to finish
@@ -73,6 +85,20 @@ def dispatch():
     else:
         print('Respond with a prefix of one of search, genre, recommend, or quit')
         return False
+
+def search(index):
+    query = input("Searching for: ")
+    i = index['doc2vec']
+    for result in doc2vec.query(query, i):
+        print(index['movies']['movieId'][result], index['movies']['title'][result])
+    
+def recommend(index):
+    query = int(input("User ID (number): "))
+    i = index['recommender']
+    for result in recommender.query(query, i):
+        if numpy.isnan(result):
+            break
+        print(index['movies']['movieId'][result], index['movies']['title'][result])
 
 def ask(prompt):
     res = input(prompt)

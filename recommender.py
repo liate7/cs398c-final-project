@@ -29,6 +29,9 @@ def index(moviesDF):
     # Finally, return a list of recommendations for each user
     return recommended_matrix(indices_sorted, scores_matrix)
 
+def query(user, index):
+    return index[user-1]
+
 def tag_docs(dociter):
     """
     Take in an iterable of documents
@@ -37,7 +40,7 @@ def tag_docs(dociter):
     for doc in dociter:
         tagged = []
         if isinstance(doc, str):
-            tagged = nltk.pos_tag(nltk.word_tokenize(doc))
+            tagged = nltk.pos_tag(nltk.word_tokenize(doc.lower()))
         yield list([(word[0], upenn_to_wn_tag(word[1])) for word in tagged])
 
 def lemmatize(dociter):
